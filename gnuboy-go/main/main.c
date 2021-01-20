@@ -216,8 +216,8 @@ void app_main(void)
     frames[0].stride = GB_WIDTH * 2;
     frames[1] = frames[0];
 
-    frames[0].buffer = rg_alloc(GB_WIDTH * GB_HEIGHT * 2, MEM_ANY);
-    frames[1].buffer = rg_alloc(GB_WIDTH * GB_HEIGHT * 2, MEM_ANY);
+    frames[0].buffer = rg_alloc(GB_WIDTH * GB_HEIGHT * 2, MEM_SLOW);
+    frames[1].buffer = rg_alloc(GB_WIDTH * GB_HEIGHT * 2, MEM_SLOW);
 
     saveSRAM = rg_settings_app_int32_get(NVS_KEY_SAVE_SRAM, 0);
     sramFile = rg_emu_get_path(EMU_PATH_SAVE_SRAM, 0);

@@ -16,6 +16,7 @@ typedef struct
 
 typedef struct
 {
+	byte padding[2048];
 	byte vbank[2][8192];
 	union
 	{

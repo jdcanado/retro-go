@@ -355,7 +355,7 @@ spi_initialize()
     spi_device_interface_config_t devcfg;
 	memset(&devcfg, 0, sizeof(devcfg));
 
-    devcfg.clock_speed_hz = SPI_MASTER_FREQ_40M;    // 80Mhz causes glitches unfortunately
+    devcfg.clock_speed_hz = SPI_MASTER_FREQ_20M;    // 80Mhz causes glitches unfortunately
     devcfg.mode = 0;                                // SPI mode 0
     devcfg.spics_io_num = RG_GPIO_LCD_CS;           // CS pin
     devcfg.queue_size = SPI_TRANSACTION_COUNT;      // We want to be able to queue 5 transactions at a time
