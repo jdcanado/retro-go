@@ -927,11 +927,11 @@ rg_update_t rg_display_queue_update(rg_video_frame_t *frame, rg_video_frame_t *p
         display.changed = true;
     }
 
-    if (previousFrame && !display.changed)
-    {
-        linesChanged = frame_diff(frame, previousFrame);
-    }
-    else
+    // if (previousFrame && !display.changed)
+    // {
+    //     linesChanged = frame_diff(frame, previousFrame);
+    // }
+    // else
     {
         frame->diff[0].left = 0;
         frame->diff[0].width = frame->width;
