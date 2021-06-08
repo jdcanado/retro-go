@@ -370,19 +370,19 @@ void gui_draw_preview(tab_t *tab, retro_emulator_file_t *file)
         {
             case 0x1: // Game cover (old format)
                 sprintf(path, RG_BASE_PATH_ROMART "/%s/%X/%08X.art", dirname, file->checksum >> 28, file->checksum);
-                img = rg_gui_load_image_file(path);
+                img = rg_image_load_from_file(path, 0);
                 break;
             case 0x2: // Game cover (png)
                 sprintf(path, RG_BASE_PATH_ROMART "/%s/%X/%08X.png", dirname, file->checksum >> 28, file->checksum);
-                img = rg_gui_load_image_file(path);
+                img = rg_image_load_from_file(path, 0);
                 break;
             case 0x3: // Save state screenshot (png)
                 sprintf(path, "%s/%s/%s.%s.png", RG_BASE_PATH_SAVES, dirname, file->name, file->ext);
-                img = rg_gui_load_image_file(path);
+                img = rg_image_load_from_file(path, 0);
                 break;
             case 0x4: // use default image (not currently used)
                 sprintf(path, RG_BASE_PATH_ROMART "/%s/default.png", dirname);
-                img = rg_gui_load_image_file(path);
+                img = rg_image_load_from_file(path, 0);
                 break;
         }
 
@@ -402,7 +402,7 @@ void gui_draw_preview(tab_t *tab, retro_emulator_file_t *file)
             gui_draw_status(tab);
         }
 
-        rg_gui_free_image(img);
+        rg_image_free(img);
     }
     else if (file->checksum && show_missing_cover)
     {
