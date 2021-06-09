@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-// rg_image_t contains a 16 bit (565LE) image
+// rg_image_t contains an RGB565 (LE) image
 typedef struct
 {
     uint16_t width;

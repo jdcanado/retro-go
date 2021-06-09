@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #include <lupng.h>
 // #include <gifdec.h>
@@ -7,37 +9,62 @@
 #include "rg_image.h"
 
 
+static inline void copy_rgb565_to_rgb888(uint8_t *dest, const uint16_t *src, size_t pixel_count)
+{
+    RG_ASSERT(dest && src, "bad param");
+
+    for (int i = 0; i < pixel_count; ++i)
+    {
+        dest[0] = ((src[i] >> 11) & 0x1F) << 3;
+        dest[1] = ((src[i] >> 5) & 0x3F) << 2;
+        dest[2] = ((src[i] & 0x1F) << 3);
+        dest += 3;
+    }
+}
+
+static inline void copy_rgb888_to_rgb565(uint16_t *dest, const uint8_t *src, size_t pixel_count)
+{
+    RG_ASSERT(dest && src, "bad param");
+
+    for (int i = 0; i < pixel_count; ++i)
+    {
+        dest[i] = (((src[0] >> 3) & 0x1F) << 11)
+                | (((src[1] >> 2) & 0x3F) << 5)
+                | (((src[2] >> 3) & 0x1F));
+        src += 3;
+    }
+}
+
 rg_image_t *rg_image_load_from_file(const char *filename, uint32_t flags)
 {
-    if (!filename)
-        return NULL;
+    RG_ASSERT(filename, "bad param");
 
     FILE *fp = fopen(filename, "rb");
-    if (fp)
+    if (!fp)
     {
-        fseek(fp, 0, SEEK_END);
-
-        size_t data_len = RG_MIN(0x80000, ftell(fp));
-        void *data = malloc(data_len);
-        if (!data)
-        {
-            RG_LOGE("Unable to load image file '%s' (out of memory)!\n", filename);
-            fclose(fp);
-            return NULL;
-        }
-
-        fseek(fp, 0, SEEK_SET);
-        fread(data, data_len, 1, fp);
-        fclose(fp);
-
-        rg_image_t *img = rg_image_load_from_memory(data, data_len, flags);
-        free(data);
-
-        return img;
+        RG_LOGE("Unable to open image file '%s'!\n", filename);
+        return NULL;
     }
 
-    RG_LOGE("Unable to load image file '%s'!\n", filename);
-    return NULL;
+    fseek(fp, 0, SEEK_END);
+
+    size_t data_len = ftell(fp);
+    uint8_t *data = malloc(data_len);
+    if (!data)
+    {
+        RG_LOGE("Memory allocation failed (%d bytes)!\n", data_len);
+        fclose(fp);
+        return NULL;
+    }
+
+    fseek(fp, 0, SEEK_SET);
+    fread(data, data_len, 1, fp);
+    fclose(fp);
+
+    rg_image_t *img = rg_image_load_from_memory(data, data_len, flags);
+    free(data);
+
+    return img;
 }
 
 rg_image_t *rg_image_load_from_memory(const uint8_t *data, size_t data_len, uint32_t flags)
@@ -57,19 +84,7 @@ rg_image_t *rg_image_load_from_memory(const uint8_t *data, size_t data_len, uint
         rg_image_t *img = rg_image_alloc(png->width, png->height);
         if (img)
         {
-            uint16_t *ptr = img->data;
-
-            for (int y = 0; y < img->height; ++y)
-            {
-                for (int x = 0; x < img->width; ++x)
-                {
-                    int offset = (y * png->width * 3) + (x * 3);
-                    int r = (png->data[offset+0] >> 3) & 0x1F;
-                    int g = (png->data[offset+1] >> 2) & 0x3F;
-                    int b = (png->data[offset+2] >> 3) & 0x1F;
-                    *(ptr++) = (r << 11) | (g << 5) | b;
-                }
-            }
+            copy_rgb888_to_rgb565(img->data, png->data, img->width * img->height);
         }
         luImageRelease(png, NULL);
         return img;
@@ -77,7 +92,7 @@ rg_image_t *rg_image_load_from_memory(const uint8_t *data, size_t data_len, uint
     else if (memcmp(data, "GIF89a", 6) == 0)
     {
     #if 0
-        gd_GIF *gif = gd_open_gif("some_animation.gif");
+        gd_GIF *gif = gd_open_gif(filename);
         if (!gif)
         {
             RG_LOGE("GIF parsing failed!\n");
@@ -85,16 +100,14 @@ rg_image_t *rg_image_load_from_memory(const uint8_t *data, size_t data_len, uint
         }
 
         rg_image_t *img = rg_image_alloc(gif->width, gif->height);
-        if (img)
+        void *buffer = malloc(gif->width * gif->height * 3);
+        if (img && buffer && gd_get_frame(gif))
         {
-            if (gd_get_frame(gif))
-            {
-                gd_render_frame(gif, buffer);
-                /* insert code to render buffer to screen  */
-            }
-            free(buffer);
+            gd_render_frame(gif, buffer);
+            copy_rgb888_to_rgb565(img->data, buffer, img->width * img->height);
         }
         gd_close_gif(gif);
+        free(buffer);
         return img;
     #endif
     }
@@ -104,12 +117,12 @@ rg_image_t *rg_image_load_from_memory(const uint8_t *data, size_t data_len, uint
         int img_height = ((uint16_t *)data)[1];
         int size_diff = (img_width * img_height * 2 + 4) - data_len;
 
-        // This might seem weird, but we need to account for some RAW565 being padded...
         if (size_diff >= 0 && size_diff <= 100)
         {
             rg_image_t *img = rg_image_alloc(img_width, img_height);
             if (img)
             {
+                // Image is already RGB565 little endian, just copy it
                 memcpy(img->data, data + 4, data_len - 4);
             }
             // else Maybe we could just return (rg_image_t *)buffer; ?
@@ -123,6 +136,8 @@ rg_image_t *rg_image_load_from_memory(const uint8_t *data, size_t data_len, uint
 
 bool rg_image_save_to_file(const char *filename, const rg_image_t *img, uint32_t flags)
 {
+    RG_ASSERT(filename && img, "bad param");
+
     LuImage *png = luImageCreate(img->width, img->height, 3, 8, 0, 0);
     if (!png)
     {
@@ -130,18 +145,7 @@ bool rg_image_save_to_file(const char *filename, const rg_image_t *img, uint32_t
         return false;
     }
 
-    uint8_t *img_ptr = png->data;
-
-    for (int y = 0; y < img->height; y++)
-    {
-        for (int x = 0; x < img->width; x++)
-        {
-            uint32_t pixel = img->data[x * img->width + y];
-            *(img_ptr++) = ((pixel >> 11) & 0x1F) << 3;
-            *(img_ptr++) = ((pixel >> 5) & 0x3F) << 2;
-            *(img_ptr++) = (pixel & 0x1F) << 3;
-        }
-    }
+    copy_rgb565_to_rgb888(png->data, img->data, img->width * img->height);
 
     if (luPngWriteFile(filename, png))
     {
