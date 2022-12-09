@@ -63,14 +63,14 @@ static inline uint32_t gamepad_read(void)
     if (!gpio_get_level(RG_GPIO_GAMEPAD_B))      state |= RG_KEY_B;
 
     #ifndef RG_TARGET_RETRO_ESP32
-        if (joyY > 2048 + 1024) state |= RG_KEY_UP;
+        if (joyY > 1800) state |= RG_KEY_UP;
         else if (joyY > 1024)   state |= RG_KEY_DOWN;
-        if (joyX > 2048 + 1024) state |= RG_KEY_LEFT;
+        if (joyX > 1800) state |= RG_KEY_LEFT;
         else if (joyX > 1024)   state |= RG_KEY_RIGHT;
     #else
-        if (joyY > 2048) state |= RG_KEY_UP;
+        if (joyY > 1800) state |= RG_KEY_UP;
         else if (joyY > 1024) state |= RG_KEY_DOWN;
-        if (joyX > 2048) state |= RG_KEY_LEFT;
+        if (joyX > 1800) state |= RG_KEY_LEFT;
         else if (joyX > 1024) state |= RG_KEY_RIGHT;
         if (state == (RG_KEY_SELECT|RG_KEY_A))
             state = RG_KEY_OPTION;
